@@ -1,0 +1,37 @@
+FROM ubi8/ubi:8.7
+
+LABEL maintainer="iva.kuser@gmail.com"
+
+ENV NEXUS_HOME=/opt/nexus \
+    NEXUS_VERSION=3.66.0-02 \
+    NEXUS_USER=nexus \
+    NEXUS_GROUP=nexus
+
+RUN dnf install -y java-1.8.0-openjdk-devel \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+RUN groupadd -r -g 200 ${NEXUS_GROUP} \
+    && useradd -r -u 200 -g ${NEXUS_GROUP} -d ${NEXUS_HOME} -s /sbin/nologin ${NEXUS_USER}
+
+RUN mkdir -p ${NEXUS_HOME} \
+    && curl -fsSL \
+    https://download.sonatype.com/nexus/3/nexus-${NEXUS_VERSION}-unix.tar.gz \
+    -o /tmp/nexus.tar.gz \
+    && tar -xzf /tmp/nexus.tar.gz --strip-components=1 -C ${NEXUS_HOME} \
+    && rm -f /tmp/nexus.tar.gz \
+    && chown -R ${NEXUS_USER}:${NEXUS_GROUP} ${NEXUS_HOME}
+
+RUN mkdir -p ${NEXUS_HOME}/sonatype-work \
+    && chown -R ${NEXUS_USER}:${NEXUS_GROUP} ${NEXUS_HOME}/sonatype-work \
+    && echo "nexus-work=${NEXUS_HOME}/sonatype-work" >> ${NEXUS_HOME}/etc/nexus-default.properties
+
+WORKDIR ${NEXUS_HOME}
+
+USER ${NEXUS_USER}
+
+EXPOSE 8081
+
+VOLUME ["${NEXUS_HOME}/sonatype-work"]
+
+CMD ["bin/nexus", "run"]

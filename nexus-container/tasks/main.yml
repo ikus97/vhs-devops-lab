@@ -1,0 +1,44 @@
+---
+
+- name: Install podman
+  dnf:
+    name: podman
+    state: present
+
+- name: Create Nexus working directory
+  file:
+    path: "{{ nexus_files_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Containerfile
+  copy:
+    src: Containerfile
+    dest: "{{ nexus_files_dir }}/Containerfile"
+    mode: '0644'
+
+- name: Copy build script
+  copy:
+    src: build.sh
+    dest: "{{ nexus_files_dir }}/build.sh"
+    mode: '0755'
+
+- name: Copy run script
+  copy:
+    src: run.sh
+    dest: "{{ nexus_files_dir }}/run.sh"
+    mode: '0755'
+
+- name: Create host volume directory
+  file:
+    path: "{{ nexus_host_volume }}"
+    state: directory
+    mode: '0755'
+
+- name: Build Nexus container image
+  command: "{{ nexus_files_dir }}/build.sh"
+  args:
+    chdir: "{{ nexus_files_dir }}"
+
+- name: Run Nexus container
+  command: "{{ nexus_files_dir }}/run.sh"
